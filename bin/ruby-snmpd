@@ -82,7 +82,7 @@
 require 'optparse'
 require 'fileutils'
 
-require 'snmp/agent'
+require 'snmp/ruby-agent'
 
 class RubySnmpd  # :nodoc:
 	VERSION = "0.1"

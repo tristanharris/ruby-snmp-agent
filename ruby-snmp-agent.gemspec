@@ -6,11 +6,12 @@ require 'ruby/snmp/agent/version'
 Gem::Specification.new do |spec|
   spec.name          = "ruby-snmp-agent"
   spec.version       = Ruby::Snmp::Agent::VERSION
-  spec.authors       = ["Matti-Oskari Leppanen"]
+  spec.authors       = ["mpalmer","mongrelx"]
   spec.email         = ["mongrelx@gmail.com"]
 
   spec.summary       = "Ruby snmp agent" 
   spec.homepage      = "https://github.com/mongrelx/ruby-snmp-agent"
+  spec.license	     = "GPLv2"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
   # delete this section to allow pushing this gem to any host.
@@ -21,10 +22,13 @@ Gem::Specification.new do |spec|
   end
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
-  spec.require_paths = ["lib"]
+  spec.bindir        = "bin"
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib","plugin"]
 
   spec.add_development_dependency "bundler", "~> 1.10"
   spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "snmp", "~> 10.0"
+  spec.add_development_dependency "socket", "~> 10.0"
+  spec.add_development_dependency "logger", "~> 10.0"
 end
