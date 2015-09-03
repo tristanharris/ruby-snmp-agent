@@ -9,9 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Matti-Oskari Leppanen"]
   spec.email         = ["mongrelx@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = "Ruby snmp agent" 
+  spec.homepage      = "https://github.com/mongrelx/ruby-snmp-agent"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
   # delete this section to allow pushing this gem to any host.
