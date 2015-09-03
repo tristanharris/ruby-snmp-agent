@@ -71,15 +71,14 @@ module SNMP  # :nodoc:
 # will help immensely.
 #
 # The basic layout of all plugins is the same -- you map a base OID to a
-# chunk of code, and then any requests for OIDs in that subtree cause the
-# code to be executed to determine the value (or lack thereof).  You use
-# SNMP::Agent#add_plugin to add a new plugin. This method takes a base OID
-# (as a string or an array of integers) and a block of code to be run when
-# the requested OID matches the given base OID.
+# chunk of code, and then any requests for that subtree cause the code to be
+# executed.  You use SNMP::Agent#add_plugin to add a new plugin. This method
+# takes a base OID (as a string or an array of integers) and a block of code
+# to be run when the requested OID matches the given base OID.
 #
 # The result from the block of code should either be a single value (if you
 # want the base OID to return a value itself), a simple array or hash (if
-# the base OID maps to a list of entries), or a tree of arrays and/or hashes
+# the base OID maps to a list of entries), or a tree of arrays and hashes
 # that describes the data underneath the base OID.
 #
 # For example, if you want OID .1.2.3 to return the single value 42, you
@@ -96,7 +95,7 @@ module SNMP  # :nodoc:
 #
 #    agent.add_plugin('1.2.4') { %w{sleepy grumpy doc crazy hungry} }
 #
-# In this case, requesting the OID '1.2.4' will get you NoSuchObject, but
+# In this case, requesting the OID '1.2.4' won't get you anything, but
 # requesting '1.2.4.0' will get you the OCTET STRING 'sleepy', and
 # requesting '1.2.4.3' will return 'crazy'.  You could also walk the whole
 # of the '1.2.4' subtree and you'll get each of the dwarves in turn.
@@ -124,27 +123,19 @@ module SNMP  # :nodoc:
 #
 # Now you can get the product of any two numbers between 0 and 5 by simply
 # doing a get on your agent for '1.2.6.n.m' -- or you could use a
-# calculator.
-#
-# The real value of plugins isn't static data like the above examples, it's
+# calculator. The real value of plugins isn't static data like this, it's
 # dynamic creation of data -- reading things from files, parsing kernel
-# data, that sort of thing.  The only limitation is that it has to fit into
-# the SNMP way of doing things (tables and lists and values, oh my!) and you
-# need to be able to write the code for it.
+# data, that sort of thing.  Doing that is left as an exercise for the
+# reader...
 #
 # === Restrictions for plugin OIDs
 #
-# You cannot have a plugin respond to a subtree of another plugin.  That is,
-# if you have one plugin which has registered itself as handling '1.2.3',
-# you cannot have another plugin that says it handles '1.2' or '1.2.3.4' --
-# in either case, the two plugins will conflict.
-#
-# This restriction isn't really an SNMP one, it's more of a sanity-saving
-# measure.  Imagine the confusion from having to troubleshoot wrong values
-# in a heavily nested plugin tree...
-#
-# If you have a deep and abiding need to nest plugins, however, get in
-# contact and we'll see about removing the limitation.
+# On the topic of plugins and subtrees: you cannot have a plugin respond
+# to a subtree of another plugin.  That is, if you have one plugin which
+# has registered itself as handling '1.2.3', you cannot have another plugin
+# that says it handles '1.2' or '1.2.3.4' -- in either case, the two plugins
+# will conflict.  Whether this behaviour is fixed in the future depends on
+# whether it turns out to be a limitation that causes major hassle.
 #
 # === Plugins and data types
 #
@@ -195,49 +186,13 @@ module SNMP  # :nodoc:
 # smaller trees will take less time to walk, and hopefully you won't need to
 # do the full set of processing to obtain the subset of values, so it'll be
 # quicker to process.
-#
-# The one limitation on caching is that you can't cache a single value,
-# because you need to return a hash to provide the :cache key.  This is yet
-# to cause anyone any problems, however I am aware of the potential problem,
-# and if it causes anyone major grief, please get in touch and we'll work out
-# an alternate solution.
 # 
-# === Communities in Plugins
-#
-# If you have a need to examine the community that was passed to the SNMP
-# request that caused your plugin to be run, you can provide an argument to
-# your block and have the community put in there.  For instance:
-#
-#   agent.add_plugin('1.2.3.4') { |c| c }
-#
-# Will return the community name passed to any request for the OID .1.2.3.4.
-#
-# Note that plugin value caching and community inspection do not play well
-# together at present -- if you return a value and ask for it to be cached,
-# it will be cached regardless of the community that is used in subsequent
-# requests.  Thus, if you have a need to examine the community in your plugin,
-# don't ask the agent to cache the response.
-# 
-# === "Declining" a request
-#
-# If you're writing a plugin that, in some instances, should completely fail
-# to respond, you can raise a DontReplyException.  This will cause the agent
-# to not send a response PDU.  Note the difference between raising
-# DontReplyException and returning nil -- the latter will cause a
-# NoSuchObject response, while the former will make the server look like a
-# black hole.
-#
-# There is a potential issue with raising DontReplyException if there are
-# multiple OIDs in the request PDU, in that no response will be sent if
-# *any* of the OIDs return a DontReplyException.  Hence they should be used
-# with caution.
-#
 # === Bulk plugin loading
 #
 # If you've got a large collection of plugins that you want to include in
 # your system, you don't have to define them all by hand within your code --
-# you can use the <tt>add_plugin_dir</tt> method to load all of the plugins
-# present in a directory.
+# you can use the <tt>add_plugin_dir</tt> method to load all of the plugins present
+# in a directory.
 #
 # There are two sorts of plugin files recognised by the loader:
 #
@@ -282,10 +237,6 @@ module SNMP  # :nodoc:
 # agent.  I don't consider this to be a major limitation, as -- due to the
 # globally-unique and globally-meaningful semantics of the MIB -- you
 # shouldn't have too much call for changing OIDs in proxies.
-#
-# There are some oddities in the proxy in the area of communities, and as far
-# as I am aware nobody is doing anything particularly taxing with the proxy,
-# so it may harbour unpleasant corner cases.  Sorry about that.
 #
 
 class Agent  # :doc:
@@ -334,9 +285,9 @@ class Agent  # :doc:
 		agent_start_time = Time.now
 		self.add_plugin('1.3.6.1.2.1.1') { {1 => [`uname -a`],
 		                                    3 => [SNMP::TimeTicks.new(((Time.now - agent_start_time) * 100).to_i)],
-		                                    4 => [settings[:sysContact]],
-		                                    5 => [settings[:sysName]],
-		                                    6 => [settings[:sysLocation]]
+		                                    4 => ["Someone"],
+		                                    5 => ["RubySNMP Agent"],
+		                                    6 => ["Unknown"]
 		                                   }
 		                                 }
 	end
@@ -459,8 +410,6 @@ class Agent  # :doc:
 				raise if e.message == 'stream closed' or e.message == 'closed stream'
 				@log.warn "IO Error: #{e.message}"
 				nil
-			rescue DontReplyException => e
-				nil
 			rescue Errno::EBADF
 				raise
 			rescue => e
@@ -492,8 +441,8 @@ class Agent  # :doc:
 	def process_get_request(message)
 		response = message.response
 		response.pdu.varbind_list.each do |v|
-			@log.debug "GetRequest OID: #{v.name}, #{message.community}"
-			v.value = get_snmp_value(v.name, message.community)
+			@log.debug "GetRequest OID: #{v.name}"
+			v.value = get_snmp_value(v.name)
 		end
 
 		response
@@ -520,9 +469,9 @@ class Agent  # :doc:
 		response
 	end
 	
-	def get_snmp_value(oid, community = nil)
+	def get_snmp_value(oid)
 		@log.debug("get_snmp_value(#{oid.to_s})")
-		data_value = get_mib_entry(oid, community).value
+		data_value = get_mib_entry(oid).value
 		
 		if data_value.is_a? ::Integer
 			SNMP::Integer.new(data_value)
@@ -538,10 +487,10 @@ class Agent  # :doc:
 		end
 	end
 	
-	def get_mib_entry(oid, community = nil)
+	def get_mib_entry(oid)
 		@log.debug "Looking for MIB entry #{oid.to_s}"
 		oid = ObjectId.new(oid) unless oid.is_a? ObjectId
-		@mib_tree.get_node(oid, community)
+		@mib_tree.get_node(oid)
 	end
 
 	def next_oid_in_tree(oid)
@@ -576,7 +525,7 @@ class MibNode  # :nodoc:
 			return initial_data
 		end
 
-		if initial_data.instance_of? Array
+		if initial_data.is_a? Array
 			initial_data = initial_data.to_hash
 		end
 
@@ -623,7 +572,7 @@ class MibNodeTree < MibNode  # :nodoc:
 		nil
 	end
 	
-	def get_node(oid, community = nil)
+	def get_node(oid)
 		oid = ObjectId.new(oid)
 		@log.debug("get_node(#{oid.to_s})")
 
@@ -632,7 +581,7 @@ class MibNodeTree < MibNode  # :nodoc:
 			# End of the road, bud
 			return self
 		else
-			return sub_node(next_idx).get_node(oid, community)
+			return sub_node(next_idx).get_node(oid)
 		end
 	end
 	
@@ -765,10 +714,9 @@ class MibNodePlugin < MibNode  # :nodoc:
 		plugin_value.to_hash
 	end
 	
-	def get_node(oid, community = nil)
-		@log.debug("plugin get_node(#{oid.to_s}, #{community.to_s})")
-		val = plugin_value(community)
-		val.get_node(oid, community) if val.respond_to? :get_node
+	def get_node(oid)
+		@log.debug("get_node(#{oid.to_s})")
+		plugin_value.get_node(oid) if plugin_value.respond_to? :get_node
 	end
 
 	def add_node(oid, node)
@@ -780,31 +728,27 @@ class MibNodePlugin < MibNode  # :nodoc:
 	end
 
 	def next_oid_in_tree(oid)
-		val = plugin_value
-		val.next_oid_in_tree(oid) if val.respond_to? :next_oid_in_tree
+		plugin_value.next_oid_in_tree(oid) if plugin_value.respond_to? :next_oid_in_tree
 	end
 	
 	private
-	def plugin_value community = nil
+	def plugin_value
 		@log.debug("Getting plugin value")
 		if Time.now.to_i > @cache_until
 			begin
 				plugin_data = nil
 				Timeout::timeout(@plugin_timeout) do
-					plugin_data = @proc.call community
+					plugin_data = @proc.call
 				end
 			rescue Timeout::Error
 				@log.warn("Plugin for OID #{@oid} exceeded the timeout")
 				return MibNodeValue.new(:logger => @log, :value => nil)
-			rescue DontReplyException => e
-				# Just pass it on up the chain
-				raise e
 			rescue => e
 				@log.warn("Plugin for OID #{@oid} raised an exception: #{e.message}\n#{e.backtrace.join("\n")}")
 				return MibNodeValue.new(:logger => @log, :value => nil)
 			end
 
-			if plugin_data.instance_of? Array
+			if plugin_data.is_a? Array
 				plugin_data = plugin_data.to_hash
 			end
 
@@ -829,7 +773,7 @@ class MibNodeProxy < MibNode  # :nodoc:
 		@log = opts[:logger] ? opts[:logger] : Logger.new('/dev/null')
 	end
 	
-	def get_node(oid, community = nil)
+	def get_node(oid)
 		oid = SNMP::ObjectId.new(oid) unless oid.is_a? SNMP::ObjectId
 		
 		complete_oid = ObjectId.new(@base_oid + oid)
@@ -879,7 +823,7 @@ class MibNodeValue < MibNode  # :nodoc:
 		@value.nil? or other.nil? ? 0 : @value <=> other.value
 	end
 
-	def get_node(oid, community = nil)
+	def get_node(oid)
 		oid.length == 0 ? self : MibNodeTree.new
 	end
 	
@@ -977,25 +921,26 @@ class UDPSocketPool
 			
 	def address_list
 		list = ['0.0.0.0']
-		
+
+                addr_infos = Socket.ip_address_list
+                addr_infos.each do |addr_info|
+                          if (addr_info.ipv4?)
+                                list << addr_info.ip_address
+                          end
+                end
 		# This should be illegal -- mjp
-		`/sbin/ifconfig`.grep(/inet addr/).each do |line|
-			if line =~ /^\s+inet addr:([0-9.]+)\s/
-				list << $1
-			end
-		end
+		#`/sbin/ifconfig`.grep(/inet addr/).each do |line|
+		#	if line =~ /^\s+inet addr:([0-9.]+)\s/
+		#		list << $1
+		#	end
+		#end
 		
 		list
 	end
 end
 
-# Exception to be raised by a plugin if it really, really, really doesn't
-# want to have anything at all to do with this request.
-class DontReplyException < Exception
-end
-
-if __FILE__ == $0
-	agent = SNMP::Agent.new(:port => 1061, :logger => Logger.new(STDOUT))
-	trap("INT") { agent.shutdown }
-	agent.start
+if $0 == __FILE__
+agent = SNMP::Agent.new(:port => 1061, :logger => Logger.new(STDOUT))
+trap("INT") { agent.shutdown }
+agent.start
 end
