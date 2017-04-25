@@ -28,7 +28,6 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.10"
   spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "snmp", "~> 10.0"
-  spec.add_development_dependency "socket", "~> 10.0"
-  spec.add_development_dependency "logger", "~> 10.0"
+  spec.add_development_dependency "snmp"
+  spec.add_development_dependency "logger"
 end
