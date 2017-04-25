@@ -281,7 +281,10 @@ class Agent  # :doc:
 		@socket = nil
 		
 		@mib_tree = MibNodeTree.new(:logger => @log)
-		
+		default_plugins
+	end
+
+	def default_plugins
 		agent_start_time = Time.now
 		self.add_plugin('1.3.6.1.2.1.1') { {1 => [`uname -a`],
 		                                    3 => [SNMP::TimeTicks.new(((Time.now - agent_start_time) * 100).to_i)],
@@ -291,6 +294,7 @@ class Agent  # :doc:
 		                                   }
 		                                 }
 	end
+	private :default_plugins
 
 	# Handle a new OID.
 	#
