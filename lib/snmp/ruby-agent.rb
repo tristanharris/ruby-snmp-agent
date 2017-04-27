@@ -530,7 +530,7 @@ class MibNode  # :nodoc:
 		end
 
 		if initial_data.is_a? Array
-			initial_data = initial_data.to_hash
+			initial_data = array_to_custom_hash(initial_data)
 		end
 
 		if initial_data.is_a? Hash
@@ -546,6 +546,15 @@ class MibNode  # :nodoc:
 			return MibNodeValue.new({:value => initial_data}.merge(opts))
 		end
 	end
+
+  private
+	def self.array_to_custom_hash(arr)
+    arr.each_with_index.inject({}) do |h, pair|
+      h[pair[1]] = pair[0]
+      h
+    end
+	end
+
 end
 
 class MibNodeTree < MibNode  # :nodoc:
@@ -753,7 +762,7 @@ class MibNodePlugin < MibNode  # :nodoc:
 			end
 
 			if plugin_data.is_a? Array
-				plugin_data = plugin_data.to_hash
+				plugin_data = self.class.array_to_custom_hash(plugin_data)
 			end
 
 			if plugin_data.is_a? Hash
@@ -849,20 +858,6 @@ end
 class UnknownMessageError < StandardError
 end
 
-end
-
-class Array  # :nodoc:
-	def keys
-		k = []
-		length.times { |v| k << v }
-		k
-	end
-	
-	def to_hash
-		h = {}
-		keys.each {|k| h[k] = self[k]}
-		h
-	end
 end
 
 class NilClass  # :nodoc:
