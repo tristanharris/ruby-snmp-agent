@@ -398,6 +398,9 @@ class Agent  # :doc:
 						when GetNextRequest
 							@log.debug "GetNextRequest received"
 							response = process_get_next_request(message)
+						when GetBulkRequest
+							@log.debug "GetBulkRequest received"
+							response = process_get_bulk_request(message)
 						else
 							raise SNMP::UnknownMessageError.new("invalid message #{message.inspect}")
 					end
@@ -447,6 +450,28 @@ class Agent  # :doc:
 		response.pdu.varbind_list.each do |v|
 			@log.debug "GetRequest OID: #{v.name}"
 			v.value = get_snmp_value(v.name)
+		end
+
+		response
+	end
+
+	def process_get_bulk_request(message)
+		response = message.response
+		message.pdu.error_index.times do |idx| #error index is max-repetitions for bulk get
+			v = response.pdu.varbind_list[idx]
+      break unless v
+			@log.debug "OID: #{v.name}"
+			v.name = next_oid_in_tree(v.name)
+			@log.debug "pgnr: Next OID is #{v.name.to_s}"
+			if SNMP::EndOfMibView == v.name
+				@log.debug "Setting error status"
+				v.name = ObjectId.new('0')
+				response.pdu.error_status = :noSuchName
+				response.pdu.error_index = idx
+			else
+				@log.debug "Regular value"
+				v.value = get_snmp_value(v.name)
+			end
 		end
 
 		response
